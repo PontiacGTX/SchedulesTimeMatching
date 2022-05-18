@@ -250,72 +250,7 @@ namespace SchedulesTimeMatching
             {
                 Console.WriteLine($"{schedule.Time} users:{string.Join(',', schedule.Users)}");
             }
-            string currentVal = "";
-            Dictionary<UserSchedule, List<string>> usersMatchTime = new Dictionary<UserSchedule, List<string>>();
-            foreach (var user in arrUsers.Keys)
-            {
-                currentVal = user;
-                foreach (var schedule in results)
-                {
-                    UserSchedule userSchedule = new UserSchedule { Time = new Dictionary<string, int> { { schedule.Time, 1 } }, User = currentVal };
-                    if(schedule.Users.Contains(user))
-                    {
-                        foreach(var innerUser in schedule.Users)
-                        {
-                            if(innerUser!=currentVal)
-                            {
-                                if(usersMatchTime.TryGetValue(userSchedule,out List<string> list))
-                                {
-                                    list.Add(innerUser);
-                                    usersMatchTime[userSchedule] = list;
-                                }
-                                else
-                                {
-                                    usersMatchTime.Add(userSchedule, new List<string> { innerUser });
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
-            string userTarget = "";
-            Dictionary<Tuple<UserSchedule, string>,int> matches = new Dictionary<Tuple<UserSchedule, string>,int>();
-            foreach(var k in usersMatchTime.Keys)
-            {
-                userTarget = k.User;
-                foreach(var user in arrUsers.Keys)
-                {
-                    if(user !=userTarget)
-                    {
-                        foreach(var kv in usersMatchTime)
-                        {
-                            if(kv.Key.User== userTarget)
-                            {
-                                if (kv.Value.Any(x => x == user))
-                                {
-                                    var tuple = new Tuple<UserSchedule, string>(k, user);
-                                    if (matches.TryGetValue(tuple, out int val))
-                                    {
-                                        val++;
-                                        matches[tuple] = val;
-                                    }
-                                    else
-                                    {
-                                        matches.Add(tuple, 1);
-                                    }
-
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-            var res = matches.GroupBy(x => x.Key.Item1.User);
-           var grouping = usersMatchTime.GroupBy(x=>x.Key.User).Select(grp=>new { 
-               Time = grp.FirstOrDefault().Key.Time, User = grp.FirstOrDefault().Key.User, UserSameDate = grp.FirstOrDefault().Value });
-
+           
         }
     }
 }
