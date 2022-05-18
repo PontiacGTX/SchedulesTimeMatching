@@ -219,11 +219,6 @@ namespace SchedulesTimeMatching
                                                 if(!userSchedule.Time.TryGetValue(dateData.Key,out int timeCtr))
                                                 {
                                                     userSchedule.Counter++;
-                                                //    timeCtr++;
-                                                //    userSchedule.Time[dateData.Key] = timeCtr; 
-                                                //}
-                                                //else
-                                                //{
                                                     userSchedule.Time.TryAdd(dateData.Key, 1);
                                                 }
                                                 userSchDic[x] = userSchedule;
@@ -244,13 +239,14 @@ namespace SchedulesTimeMatching
             }
             foreach(var usermatch in usersMatch)
             {
-                Console.WriteLine($"{usermatch.Key} worked with {string.Join(",", usermatch.Value.Values.Select(x => new { x.Time, x.User }).SelectMany(x => x.Time.Keys.Select(y => new { Time = y, Times = x.Time[y], x.User, TotalTimesWorked = x.Time.Count(), NL= "\n" })))}");
+                Console.WriteLine($"{usermatch.Key} worked with {string.Join(",", usermatch.Value.Values.SelectMany(x => x.Time.Keys.Select(y => new { Time = y, Times = x.Time[y], x.User, TotalTimesWorked = x.Time.Count(), NL= "\n" })))}");
             }
             foreach (var schedule in results)
             {
                 Console.WriteLine($"{schedule.Time} users:{string.Join(',', schedule.Users)}");
             }
-           
+            
+
         }
     }
 }
