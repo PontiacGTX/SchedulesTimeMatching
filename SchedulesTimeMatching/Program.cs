@@ -81,13 +81,12 @@ namespace SchedulesTimeMatching
                 }
                 if(userFound)
                 {
-                    //Regex regex = new Regex("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$");
-                    //var match = regex.Match(input);
+                    
                     UsersSchedule userSchedule = new UsersSchedule();
                     int beginIndex = input.IndexOf("=")+1;
                     string[] values = input.Substring(beginIndex,input.Length-beginIndex).Split(",");
                     userSchedule.User = user;
-                    userSchedule.Time = values.ToList();//match.Groups.Values.Select(x => x.Value).ToList();
+                    userSchedule.Time = values.ToList();
 
                     yield return userSchedule;
                 }
@@ -190,6 +189,8 @@ namespace SchedulesTimeMatching
     {
         public static async Task Main(string[] args)
         {
+            
+
             ScheduleMatching scheduleMatching = new ScheduleMatching();
             await scheduleMatching.FromFile("dat.txt");
             var results = await scheduleMatching.GetMatchingSchedule();
@@ -219,6 +220,11 @@ namespace SchedulesTimeMatching
                                                 if(!userSchedule.Time.TryGetValue(dateData.Key,out int timeCtr))
                                                 {
                                                     userSchedule.Counter++;
+                                                //    timeCtr++;
+                                                //    userSchedule.Time[dateData.Key] = timeCtr; 
+                                                //}
+                                                //else
+                                                //{
                                                     userSchedule.Time.TryAdd(dateData.Key, 1);
                                                 }
                                                 userSchDic[x] = userSchedule;
