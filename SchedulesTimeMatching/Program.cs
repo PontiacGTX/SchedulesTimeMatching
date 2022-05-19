@@ -81,12 +81,13 @@ namespace SchedulesTimeMatching
                 }
                 if(userFound)
                 {
-                    
+                    //Regex regex = new Regex("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$");
+                    //var match = regex.Match(input);
                     UsersSchedule userSchedule = new UsersSchedule();
                     int beginIndex = input.IndexOf("=")+1;
                     string[] values = input.Substring(beginIndex,input.Length-beginIndex).Split(",");
                     userSchedule.User = user;
-                    userSchedule.Time = values.ToList();
+                    userSchedule.Time = values.ToList();//match.Groups.Values.Select(x => x.Value).ToList();
 
                     yield return userSchedule;
                 }
@@ -200,48 +201,43 @@ namespace SchedulesTimeMatching
             foreach(var user in arrUsers.Keys)
             {
                 var cpyTargetUser = user;
-                foreach(var key in arrUsers.Keys)
+                
+                foreach(var dateData in re)
                 {
-                    foreach(var dateData in re)
+                    if(dateData.Value.TryGetValue(cpyTargetUser, out bool exists))
                     {
-                        if(dateData.Value.TryGetValue(cpyTargetUser, out bool exists))
+                        foreach(var x in dateData.Value.Keys)
                         {
-                            foreach(var x in dateData.Value.Keys)
+                            if (cpyTargetUser != x)
                             {
-                                if (cpyTargetUser != x)
+                                var temp = new UserSchedule { User = x, Time = new Dictionary<string, int> { {dateData.Key, 1 } }, Counter = 1 };
+                                if (!usersMatch.TryAdd(cpyTargetUser,new Dictionary<string, UserSchedule> { { x , temp } }))
                                 {
-                                    var temp = new UserSchedule { User = x, Time = new Dictionary<string, int> { {dateData.Key, 1 } }, Counter = 1 };
-                                    if (!usersMatch.TryAdd(cpyTargetUser,new Dictionary<string, UserSchedule> { { x , temp } }))
+                                    if (usersMatch.TryGetValue(cpyTargetUser, out Dictionary<string, UserSchedule> userSchDic))
                                     {
-                                        if (usersMatch.TryGetValue(cpyTargetUser, out Dictionary<string, UserSchedule> userSchDic))
+                                        if(userSchDic.TryGetValue(x, out UserSchedule userSchedule))
                                         {
-                                            if(userSchDic.TryGetValue(x, out UserSchedule userSchedule))
+                                            if(!userSchedule.Time.TryGetValue(dateData.Key,out int timeCtr))
                                             {
-                                                if(!userSchedule.Time.TryGetValue(dateData.Key,out int timeCtr))
-                                                {
-                                                    userSchedule.Counter++;
-                                                //    timeCtr++;
-                                                //    userSchedule.Time[dateData.Key] = timeCtr; 
-                                                //}
-                                                //else
-                                                //{
-                                                    userSchedule.Time.TryAdd(dateData.Key, 1);
-                                                }
-                                                userSchDic[x] = userSchedule;
+                                                userSchedule.Counter++;
+                                           
+                                                userSchedule.Time.TryAdd(dateData.Key, 1);
                                             }
-                                            else
-                                            {
-                                                userSchDic.TryAdd(x, temp);
-                                            }
-                                            continue;
+                                            userSchDic[x] = userSchedule;
                                         }
+                                        else
+                                        {
+                                            userSchDic.TryAdd(x, temp);
+                                        }
+                                        continue;
                                     }
                                 }
-
                             }
+
                         }
                     }
                 }
+                
             }
             foreach(var usermatch in usersMatch)
             {
@@ -251,8 +247,36 @@ namespace SchedulesTimeMatching
             {
                 Console.WriteLine($"{schedule.Time} users:{string.Join(',', schedule.Users)}");
             }
-            
+            string currentVal = "";
+            Dictionary<UserSchedule, List<string>> usersMatchTime = new Dictionary<UserSchedule, List<string>>();
+            foreach (var user in arrUsers.Keys)
+            {
+                currentVal = user;
+                foreach (var schedule in results)
+                {
+                    UserSchedule userSchedule = new UserSchedule { Time = new Dictionary<string, int> { { schedule.Time, 1 } }, User = currentVal };
+                    if (schedule.Users.Contains(user))
+                    {
+                        foreach (var innerUser in schedule.Users)
+                        {
+                            if (innerUser != currentVal)
+                            {
+                                if (usersMatchTime.TryGetValue(userSchedule, out List<string> list))
+                                {
+                                    list.Add(innerUser);
+                                    usersMatchTime[userSchedule] = list;
+                                }
+                                else
+                                {
+                                    usersMatchTime.Add(userSchedule, new List<string> { innerUser });
+                                }
+                            }
 
+                        }
+                    }
+                }
+            }
+           
         }
     }
 }
