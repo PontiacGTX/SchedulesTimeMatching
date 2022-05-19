@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace SchedulesTimeMatching
@@ -24,6 +26,7 @@ namespace SchedulesTimeMatching
     {
         string[] src { get; set; } = null;
         string Path { get; set; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<Dictionary<String,bool>> GetKeys(string? path=null)
         {
             if (Path is null && path is null)
@@ -59,10 +62,12 @@ namespace SchedulesTimeMatching
 
             return true;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         async Task<string[]> ReadDataAsync(string path)
         {
             return src = await File.ReadAllLinesAsync(path);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         async IAsyncEnumerable<UsersSchedule> DeserializeData()
         {
             var cultureEnUs = new CultureInfo("en-US");
@@ -95,7 +100,7 @@ namespace SchedulesTimeMatching
              yield return null;
 
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<List<UsersSchedule>> DeserializeDataToListAsync()
         {
             List<UsersSchedule> results = new List<UsersSchedule>(); 
@@ -106,6 +111,7 @@ namespace SchedulesTimeMatching
             }
             return await Task.FromResult(results);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<Dictionary<string, Dictionary<string, bool>>> GetSchedulingDictionary(string path = null)
         {
             if (path is null && src is null)
@@ -142,6 +148,7 @@ namespace SchedulesTimeMatching
             }
             return usersScheduleDic;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<IEnumerable<ScheduleUsers>> GetMatchingSchedule(string path = null)
         {
             if(path is null && src is null)
@@ -185,42 +192,39 @@ namespace SchedulesTimeMatching
             return usersDate.Select(x => new {schedule = x.Key, users = x.Value })
                 .Where(x => x.users.Count() > 1).Select(x=>new ScheduleUsers { Time = x.schedule, Users = x.users.Keys.Select(x=>x).ToList() });
         }
-    }
-    public static class Program
-    {
-        public static async Task Main(string[] args)
+        public async Task<Dictionary<string, Dictionary<string, UserSchedule>>> GetUsersMatchingSchedule(Dictionary<string, Dictionary<string, bool>> resultUsersSchedule, Dictionary<String, bool> userMaps)
         {
-            
-
-            ScheduleMatching scheduleMatching = new ScheduleMatching();
-            await scheduleMatching.FromFile("dat.txt");
-            var results = await scheduleMatching.GetMatchingSchedule();
-            Dictionary<string, Dictionary<string, bool>> re = await scheduleMatching.GetSchedulingDictionary();
-            var arrUsers = await scheduleMatching.GetKeys();
             Dictionary<string, Dictionary<string, UserSchedule>> usersMatch = new();
-            foreach(var user in arrUsers.Keys)
+            if (userMaps is null)
+                throw new NullReferenceException($"User map cannot be null");
+
+            if(resultUsersSchedule is null)
+            {
+                throw new NullReferenceException($"Users matching schedule must not be null");
+            }
+            foreach (var user in userMaps.Keys)
             {
                 var cpyTargetUser = user;
-                
-                foreach(var dateData in re)
+
+                foreach (var dateData in resultUsersSchedule)
                 {
-                    if(dateData.Value.TryGetValue(cpyTargetUser, out bool exists))
+                    if (dateData.Value.TryGetValue(cpyTargetUser, out bool exists))
                     {
-                        foreach(var x in dateData.Value.Keys)
+                        foreach (var x in dateData.Value.Keys)
                         {
                             if (cpyTargetUser != x)
                             {
-                                var temp = new UserSchedule { User = x, Time = new Dictionary<string, int> { {dateData.Key, 1 } }, Counter = 1 };
-                                if (!usersMatch.TryAdd(cpyTargetUser,new Dictionary<string, UserSchedule> { { x , temp } }))
+                                var temp = new UserSchedule { User = x, Time = new Dictionary<string, int> { { dateData.Key, 1 } }, Counter = 1 };
+                                if (!usersMatch.TryAdd(cpyTargetUser, new Dictionary<string, UserSchedule> { { x, temp } }))
                                 {
                                     if (usersMatch.TryGetValue(cpyTargetUser, out Dictionary<string, UserSchedule> userSchDic))
                                     {
-                                        if(userSchDic.TryGetValue(x, out UserSchedule userSchedule))
+                                        if (userSchDic.TryGetValue(x, out UserSchedule userSchedule))
                                         {
-                                            if(!userSchedule.Time.TryGetValue(dateData.Key,out int timeCtr))
+                                            if (!userSchedule.Time.TryGetValue(dateData.Key, out int timeCtr))
                                             {
                                                 userSchedule.Counter++;
-                                           
+                                              
                                                 userSchedule.Time.TryAdd(dateData.Key, 1);
                                             }
                                             userSchDic[x] = userSchedule;
@@ -237,46 +241,34 @@ namespace SchedulesTimeMatching
                         }
                     }
                 }
-                
+
             }
-            foreach(var usermatch in usersMatch)
+            return usersMatch;
+        }
+    }
+    public static class Program
+    {
+
+        public static async Task Main(string[] args)
+        {
+
+           
+            ScheduleMatching scheduleMatching = new ScheduleMatching();
+            await scheduleMatching.FromFile("dat.txt");
+            var results = await scheduleMatching.GetMatchingSchedule();
+            Dictionary<string, Dictionary<string, bool>> re = await scheduleMatching.GetSchedulingDictionary();
+            var arrUsers = await scheduleMatching.GetKeys();
+            var usersMatch = await scheduleMatching.GetUsersMatchingSchedule(re,arrUsers);
+            foreach (var usermatch in usersMatch)
             {
-                Console.WriteLine($"{usermatch.Key} worked with {string.Join(",", usermatch.Value.Values.SelectMany(x => x.Time.Keys.Select(y => new { Time = y, Times = x.Time[y], x.User, TotalTimesWorked = x.Time.Count(), NL= "\n" })))}");
+                Console.WriteLine($"{usermatch.Key} worked with {string.Join(",", usermatch.Value.Values.SelectMany(x => x.Time.Keys.Select(y => new { Time = y, Times = x.Time[y], x.User, TotalTimesWorked = x.Time.Count(), NL = "\n" })))}");
             }
             foreach (var schedule in results)
             {
                 Console.WriteLine($"{schedule.Time} users:{string.Join(',', schedule.Users)}");
             }
-            string currentVal = "";
-            Dictionary<UserSchedule, List<string>> usersMatchTime = new Dictionary<UserSchedule, List<string>>();
-            foreach (var user in arrUsers.Keys)
-            {
-                currentVal = user;
-                foreach (var schedule in results)
-                {
-                    UserSchedule userSchedule = new UserSchedule { Time = new Dictionary<string, int> { { schedule.Time, 1 } }, User = currentVal };
-                    if (schedule.Users.Contains(user))
-                    {
-                        foreach (var innerUser in schedule.Users)
-                        {
-                            if (innerUser != currentVal)
-                            {
-                                if (usersMatchTime.TryGetValue(userSchedule, out List<string> list))
-                                {
-                                    list.Add(innerUser);
-                                    usersMatchTime[userSchedule] = list;
-                                }
-                                else
-                                {
-                                    usersMatchTime.Add(userSchedule, new List<string> { innerUser });
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
            
+
         }
     }
 }
